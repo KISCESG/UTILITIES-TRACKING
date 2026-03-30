@@ -11,61 +11,77 @@
     body { font-family: system-ui, -apple-system, sans-serif; }
     .card { transition: all 0.3s; }
     .card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+    .logo-img { max-height: 80px; }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-  <!-- Header -->
+  <!-- Header with Logos -->
   <nav class="bg-emerald-700 text-white shadow-lg">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-      <div class="flex items-center gap-3">
-        <span class="text-2xl">🌍</span>
-        <h1 class="text-2xl font-bold">Kitengela International Schools</h1>
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <!-- School Logo + Name -->
+        <div class="flex items-center gap-4">
+          <img src="https://kisc.sc.ke/wp-content/uploads/2023/05/KISC-Logo.png" 
+               alt="Kitengela International Schools Logo" 
+               class="logo-img">
+          <div>
+            <h1 class="text-2xl font-bold">Kitengela International Schools</h1>
+            <p class="text-sm opacity-90">"Excellence in Education"</p>
+          </div>
+        </div>
+
+        <!-- ESG Logo -->
+        <div class="text-center">
+          <div class="text-6xl font-black tracking-tighter" style="background: linear-gradient(to right, #10b981, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            ESG
+          </div>
+          <p class="text-xs tracking-widest text-emerald-200">ENVIRONMENTAL • SOCIAL • GOVERNANCE</p>
+        </div>
+
+        <div id="last-updated" class="text-xs bg-white/20 px-4 py-2 rounded-full"></div>
       </div>
-      <div class="text-sm">ESG Utilities Dashboard • Real-time • 7 Schools</div>
-      <div id="last-updated" class="text-xs bg-white/20 px-3 py-1 rounded-full"></div>
     </div>
   </nav>
 
   <div class="max-w-7xl mx-auto px-6 py-8">
 
-    <!-- Totals -->
+    <!-- Totals Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
       <div id="water-card" class="card bg-white rounded-3xl shadow p-6 border border-emerald-200">
-        <p class="text-emerald-600 text-sm font-medium">TOTAL WATER</p>
+        <p class="text-emerald-600 text-sm font-medium">TOTAL WATER CONSUMPTION</p>
         <h2 id="water-total" class="text-5xl font-bold text-emerald-700 mt-2">0 m³</h2>
-        <p class="text-gray-500 text-sm mt-1">This month • All schools</p>
+        <p class="text-gray-500 text-sm mt-1">This month • All 7 schools</p>
       </div>
       <div id="electricity-card" class="card bg-white rounded-3xl shadow p-6 border border-amber-200">
         <p class="text-amber-600 text-sm font-medium">TOTAL ELECTRICITY</p>
         <h2 id="electricity-total" class="text-5xl font-bold text-amber-700 mt-2">0 kWh</h2>
-        <p class="text-gray-500 text-sm mt-1">This month • All schools</p>
+        <p class="text-gray-500 text-sm mt-1">This month • All 7 schools</p>
       </div>
       <div id="gas-card" class="card bg-white rounded-3xl shadow p-6 border border-blue-200">
         <p class="text-blue-600 text-sm font-medium">TOTAL GAS</p>
         <h2 id="gas-total" class="text-5xl font-bold text-blue-700 mt-2">0 kg</h2>
-        <p class="text-gray-500 text-sm mt-1">This month • All schools</p>
+        <p class="text-gray-500 text-sm mt-1">This month • All 7 schools</p>
       </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
       <!-- Bar Chart: By School -->
       <div class="bg-white rounded-3xl shadow p-6">
-        <h3 class="font-semibold text-lg mb-4">Utilities Consumption by School</h3>
-        <canvas id="schoolChart" height="300"></canvas>
+        <h3 class="font-semibold text-lg mb-4">Utilities by School</h3>
+        <canvas id="schoolChart" height="320"></canvas>
       </div>
 
       <!-- Line Chart: Trend -->
       <div class="bg-white rounded-3xl shadow p-6">
         <h3 class="font-semibold text-lg mb-4">Daily Trend (Last 30 Days)</h3>
-        <canvas id="trendChart" height="300"></canvas>
+        <canvas id="trendChart" height="320"></canvas>
       </div>
     </div>
 
-    <!-- Recent Readings Table -->
+    <!-- Recent Readings -->
     <div class="mt-10 bg-white rounded-3xl shadow overflow-hidden">
-      <div class="px-6 py-4 border-b font-semibold">Recent Readings</div>
+      <div class="px-6 py-4 border-b font-semibold bg-emerald-50">Recent Utility Readings</div>
       <table id="data-table" class="w-full">
         <thead class="bg-gray-50">
           <tr>
@@ -81,15 +97,14 @@
     </div>
   </div>
 
-  <footer class="text-center text-gray-400 text-xs py-8">
-    Built by Onesmus Masoo • ESG Assistant • Data from Google Sheet • Auto-updates on refresh
+  <footer class="text-center text-gray-400 text-xs py-8 border-t">
+    Built by Onesmus Masoo (ESG Assistant) • Live from Google Sheet • Auto-updates every 5 minutes
   </footer>
 
   <script>
-    // ================== CHANGE THIS LINE ONLY ==================
+    // === PASTE YOUR CSV LINK HERE ===
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-Br8aUacDF6gbBJ2RtQ6DJdPn0U94wsOKv6ZEQ7GenNI-D2fy_8L3TbhctQms3jfloa9c-8d4U6lj/pub?output=csv";
-    // Paste your own published CSV link here ↑
-    // ============================================================
+    // =================================
 
     let schoolChartInstance, trendChartInstance;
 
@@ -104,7 +119,6 @@
           complete: function(results) {
             const data = results.data.filter(row => row.School && row['Reading Date']);
 
-            // Calculate totals
             let totalWater = 0, totalElectricity = 0, totalGas = 0;
             const schoolData = {};
             const trendData = {};
@@ -120,14 +134,12 @@
               totalElectricity += elec;
               totalGas += gas;
 
-              // By school
-              if (!schoolData[school]) schoolData[school] = { water: 0, elec: 0, gas: 0 };
+              if (!schoolData[school]) schoolData[school] = {water:0, elec:0, gas:0};
               schoolData[school].water += water;
               schoolData[school].elec += elec;
               schoolData[school].gas += gas;
 
-              // Trend (simple daily)
-              if (!trendData[date]) trendData[date] = { water: 0 };
+              if (!trendData[date]) trendData[date] = {water:0};
               trendData[date].water += water;
             });
 
@@ -136,28 +148,20 @@
             document.getElementById('electricity-total').textContent = totalElectricity.toFixed(0) + ' kWh';
             document.getElementById('gas-total').textContent = totalGas.toFixed(0) + ' kg';
 
-            // Update last refreshed
-            document.getElementById('last-updated').textContent = 'Last refreshed: just now';
+            document.getElementById('last-updated').textContent = 'Updated just now';
 
-            // Render Bar Chart (by school)
+            // School Bar Chart
             const schools = Object.keys(schoolData);
             const waterValues = schools.map(s => schoolData[s].water);
 
             if (schoolChartInstance) schoolChartInstance.destroy();
             schoolChartInstance = new Chart(document.getElementById('schoolChart'), {
               type: 'bar',
-              data: {
-                labels: schools,
-                datasets: [{
-                  label: 'Water (m³)',
-                  data: waterValues,
-                  backgroundColor: '#10b981'
-                }]
-              },
-              options: { responsive: true, plugins: { legend: { display: false } } }
+              data: { labels: schools, datasets: [{ label: 'Water (m³)', data: waterValues, backgroundColor: '#10b981' }] },
+              options: { responsive: true, plugins: { legend: { display: false }} }
             });
 
-            // Render Trend Line
+            // Trend Line
             const dates = Object.keys(trendData).sort();
             const waterTrend = dates.map(d => trendData[d].water);
 
@@ -166,28 +170,22 @@
               type: 'line',
               data: {
                 labels: dates,
-                datasets: [{
-                  label: 'Water Consumption',
-                  data: waterTrend,
-                  borderColor: '#10b981',
-                  tension: 0.4,
-                  fill: false
-                }]
+                datasets: [{ label: 'Water', data: waterTrend, borderColor: '#10b981', tension: 0.4 }]
               },
               options: { responsive: true }
             });
 
-            // Recent table (last 10 rows)
+            // Recent table
             const tbody = document.querySelector('#data-table tbody');
             tbody.innerHTML = '';
-            data.slice(0, 10).forEach(row => {
+            data.slice(-10).reverse().forEach(row => {
               const tr = document.createElement('tr');
               tr.innerHTML = `
                 <td class="px-6 py-4">${row.School}</td>
                 <td class="px-6 py-4">${row['Reading Date']}</td>
-                <td class="px-6 py-4 text-right">${parseFloat(row['Water Consumption (m³)'] || 0).toFixed(1)}</td>
-                <td class="px-6 py-4 text-right">${parseFloat(row['Electricity (kWh)'] || 0).toFixed(0)}</td>
-                <td class="px-6 py-4 text-right">${parseFloat(row['Gas (kg)'] || 0).toFixed(0)}</td>
+                <td class="px-6 py-4 text-right">${parseFloat(row['Water Consumption (m³)']||0).toFixed(1)}</td>
+                <td class="px-6 py-4 text-right">${parseFloat(row['Electricity (kWh)']||0).toFixed(0)}</td>
+                <td class="px-6 py-4 text-right">${parseFloat(row['Gas (kg)']||0).toFixed(0)}</td>
               `;
               tbody.appendChild(tr);
             });
@@ -195,24 +193,13 @@
         });
       } catch (err) {
         console.error(err);
-        alert("Could not load data. Please check your CSV_URL and make sure the sheet is published.");
+        alert("Error loading data. Check your CSV_URL and ensure the sheet is published as CSV.");
       }
     }
 
-    // Tailwind script
-    function initTailwind() {
-      tailwind.config = {
-        content: [],
-        theme: { extend: {} }
-      };
-    }
-
-    // Start everything
     window.onload = () => {
-      initTailwind();
       loadData();
-      // Auto-refresh every 5 minutes
-      setInterval(loadData, 5 * 60 * 1000);
+      setInterval(loadData, 5 * 60 * 1000); // Auto refresh every 5 minutes
     };
   </script>
 </body>
