@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KISC ESG Utilities Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .card { transition: all 0.3s; }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- Header -->
+  <nav class="bg-emerald-700 text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🌍</span>
+        <h1 class="text-2xl font-bold">Kitengela International Schools</h1>
+      </div>
+      <div class="text-sm">ESG Utilities Dashboard • Real-time • 7 Schools</div>
+      <div id="last-updated" class="text-xs bg-white/20 px-3 py-1 rounded-full"></div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-6 py-8">
+
+    <!-- Totals -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div id="water-card" class="card bg-white rounded-3xl shadow p-6 border border-emerald-200">
+        <p class="text-emerald-600 text-sm font-medium">TOTAL WATER</p>
+        <h2 id="water-total" class="text-5xl font-bold text-emerald-700 mt-2">0 m³</h2>
+        <p class="text-gray-500 text-sm mt-1">This month • All schools</p>
+      </div>
+      <div id="electricity-card" class="card bg-white rounded-3xl shadow p-6 border border-amber-200">
+        <p class="text-amber-600 text-sm font-medium">TOTAL ELECTRICITY</p>
+        <h2 id="electricity-total" class="text-5xl font-bold text-amber-700 mt-2">0 kWh</h2>
+        <p class="text-gray-500 text-sm mt-1">This month • All schools</p>
+      </div>
+      <div id="gas-card" class="card bg-white rounded-3xl shadow p-6 border border-blue-200">
+        <p class="text-blue-600 text-sm font-medium">TOTAL GAS</p>
+        <h2 id="gas-total" class="text-5xl font-bold text-blue-700 mt-2">0 kg</h2>
+        <p class="text-gray-500 text-sm mt-1">This month • All schools</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+      <!-- Bar Chart: By School -->
+      <div class="bg-white rounded-3xl shadow p-6">
+        <h3 class="font-semibold text-lg mb-4">Utilities Consumption by School</h3>
+        <canvas id="schoolChart" height="300"></canvas>
+      </div>
+
+      <!-- Line Chart: Trend -->
+      <div class="bg-white rounded-3xl shadow p-6">
+        <h3 class="font-semibold text-lg mb-4">Daily Trend (Last 30 Days)</h3>
+        <canvas id="trendChart" height="300"></canvas>
+      </div>
+    </div>
+
+    <!-- Recent Readings Table -->
+    <div class="mt-10 bg-white rounded-3xl shadow overflow-hidden">
+      <div class="px-6 py-4 border-b font-semibold">Recent Readings</div>
+      <table id="data-table" class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="text-left px-6 py-3">School</th>
+            <th class="text-left px-6 py-3">Date</th>
+            <th class="text-right px-6 py-3">Water (m³)</th>
+            <th class="text-right px-6 py-3">Electricity (kWh)</th>
+            <th class="text-right px-6 py-3">Gas (kg)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer class="text-center text-gray-400 text-xs py-8">
+    Built by Onesmus Masoo • ESG Assistant • Data from Google Sheet • Auto-updates on refresh
+  </footer>
+
+  <script>
+    // ================== CHANGE THIS LINE ONLY ==================
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-XXXXXXXXXXXXXXXXXXXX/pub?output=csv";
+    // Paste your own published CSV link here ↑
+    // ============================================================
+
+    let schoolChartInstance, trendChartInstance;
+
+    async function loadData() {
+      try {
+        const response = await fetch(CSV_URL);
+        const csvText = await response.text();
+
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            const data = results.data.filter(row => row.School && row['Reading Date']);
+
+            // Calculate totals
+            let totalWater = 0, totalElectricity = 0, totalGas = 0;
+            const schoolData = {};
+            const trendData = {};
+
+            data.forEach(row => {
+              const water = parseFloat(row['Water Consumption (m³)']) || 0;
+              const elec = parseFloat(row['Electricity (kWh)']) || 0;
+              const gas = parseFloat(row['Gas (kg)']) || 0;
+              const school = row.School.trim();
+              const date = row['Reading Date'];
+
+              totalWater += water;
+              totalElectricity += elec;
+              totalGas += gas;
+
+              // By school
+              if (!schoolData[school]) schoolData[school] = { water: 0, elec: 0, gas: 0 };
+              schoolData[school].water += water;
+              schoolData[school].elec += elec;
+              schoolData[school].gas += gas;
+
+              // Trend (simple daily)
+              if (!trendData[date]) trendData[date] = { water: 0 };
+              trendData[date].water += water;
+            });
+
+            // Update cards
+            document.getElementById('water-total').textContent = totalWater.toFixed(1) + ' m³';
+            document.getElementById('electricity-total').textContent = totalElectricity.toFixed(0) + ' kWh';
+            document.getElementById('gas-total').textContent = totalGas.toFixed(0) + ' kg';
+
+            // Update last refreshed
+            document.getElementById('last-updated').textContent = 'Last refreshed: just now';
+
+            // Render Bar Chart (by school)
+            const schools = Object.keys(schoolData);
+            const waterValues = schools.map(s => schoolData[s].water);
+
+            if (schoolChartInstance) schoolChartInstance.destroy();
+            schoolChartInstance = new Chart(document.getElementById('schoolChart'), {
+              type: 'bar',
+              data: {
+                labels: schools,
+                datasets: [{
+                  label: 'Water (m³)',
+                  data: waterValues,
+                  backgroundColor: '#10b981'
+                }]
+              },
+              options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            // Render Trend Line
+            const dates = Object.keys(trendData).sort();
+            const waterTrend = dates.map(d => trendData[d].water);
+
+            if (trendChartInstance) trendChartInstance.destroy();
+            trendChartInstance = new Chart(document.getElementById('trendChart'), {
+              type: 'line',
+              data: {
+                labels: dates,
+                datasets: [{
+                  label: 'Water Consumption',
+                  data: waterTrend,
+                  borderColor: '#10b981',
+                  tension: 0.4,
+                  fill: false
+                }]
+              },
+              options: { responsive: true }
+            });
+
+            // Recent table (last 10 rows)
+            const tbody = document.querySelector('#data-table tbody');
+            tbody.innerHTML = '';
+            data.slice(0, 10).forEach(row => {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td class="px-6 py-4">${row.School}</td>
+                <td class="px-6 py-4">${row['Reading Date']}</td>
+                <td class="px-6 py-4 text-right">${parseFloat(row['Water Consumption (m³)'] || 0).toFixed(1)}</td>
+                <td class="px-6 py-4 text-right">${parseFloat(row['Electricity (kWh)'] || 0).toFixed(0)}</td>
+                <td class="px-6 py-4 text-right">${parseFloat(row['Gas (kg)'] || 0).toFixed(0)}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Could not load data. Please check your CSV_URL and make sure the sheet is published.");
+      }
+    }
+
+    // Tailwind script
+    function initTailwind() {
+      tailwind.config = {
+        content: [],
+        theme: { extend: {} }
+      };
+    }
+
+    // Start everything
+    window.onload = () => {
+      initTailwind();
+      loadData();
+      // Auto-refresh every 5 minutes
+      setInterval(loadData, 5 * 60 * 1000);
+    };
+  </script>
+</body>
+</html>
